@@ -72,18 +72,18 @@ def scrape_page(address: str):
     ## Return Values
     # The value returned from a native or callback
     return_values = []
-    params_len = len(params_body)
-    b = root.select("#bodyContent > b")
+    b = root.select(".param")
     if b:
-        siblings = b[0].find_next_siblings()
-        if siblings:
-            element = siblings[2 + params_len]
-            ul = element.select("ul")
-            if ul:
-                for li in ul[0].select("li"):
-                    return_values.append(li.get_text())
-            else:
-                return_values.append(element)
+        p = b[0].find_next_sibling("p")
+        if p:
+            div = p.find_next_sibling("div")
+            if div:
+                ul = div.select("ul")
+                if ul:
+                    for li in ul[0].select("li"):
+                        return_values.append(li.get_text())
+                else:
+                    return_values.append(div)
     result["return_values"] = return_values
 
     ## Code Blocks
@@ -94,25 +94,23 @@ def scrape_page(address: str):
     if pre:
         for element in pre:
             if element.has_attr("class") and element["class"][0] == "pawn":
-                #print(element)
                 pawn.append(element)
             else:
-                print(element)
                 code.append(element)
     result["pawn_code"] = pawn
     result["code"] = code
 
     ## Related Functions
     # Links to related natives
-    related_funcs = []
+    related_fn = []
     element = root.select("a[name=\"Related_Functions\"]")
     if element:
         next_element = element[0].find_next_siblings("ul")
         if next_element:
             for ul in next_element:
                 for li in ul.select("li"):
-                    related_funcs.append(related_funcs)
-    result["related_funcs"] = related_funcs
+                    related_fn.append(li)
+    result["related_fn"] = related_fn
 
     ## Related Callbacks
     # Links to related callbacks
@@ -165,7 +163,7 @@ def main():
     #     print(page)
     #     scrape_page(page)
 
-    scrape_page("https://wiki.sa-mp.com/wiki/AddMenuItem")
+    scrape_page("https://wiki.sa-mp.com/wiki/DisablePlayerCheckpoint")
 
 
 main()
