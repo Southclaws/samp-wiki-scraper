@@ -23,28 +23,30 @@ def scrape_page(address: str):
     if table:        
         for element in table:
             parent = element.find_parent("td")
-            td = parent.find_next_sibling("td")
-            span = td.select("span")            
-            if element.has_attr("href"):
-                href = element["href"]
-                # Version
-                if href == "/wiki/Image:Add.png":                                      
-                    versions.append(span)
-                # Warnings
-                elif href == "/wiki/Image:32px-Circle-style-warning.png":
-                    warnings.append(span)                 
-                # Notes
-                elif href == "/wiki/Image:32px-Ambox_warning_orange.png":
-                    notes.append(span)
-                # Tips
-                elif href == "/wiki/Image:Light_bulb_icon.png":                   
-                    tips.append(span)
-                # Outdated
-                elif href == "/wiki/Image:50px-Ambox_outdated_serious.png":
-                    outdated.append(span)
-                # Lowercase 
-                elif href == "/wiki/Image:Farm-Fresh_text_lowercase.png":
-                    lowercase.append(span)
+            if parent:
+                td = parent.find_next_sibling("td")
+                if td is not None:
+                    span = td.select("span")         
+                    if element.has_attr("href"):
+                        href = element["href"]
+                        # Version
+                        if href == "/wiki/Image:Add.png":                                      
+                            versions.append(span)
+                        # Warnings
+                        elif href == "/wiki/Image:32px-Circle-style-warning.png":
+                            warnings.append(span)                 
+                        # Notes
+                        elif href == "/wiki/Image:32px-Ambox_warning_orange.png":
+                            notes.append(span)
+                        # Tips
+                        elif href == "/wiki/Image:Light_bulb_icon.png":                   
+                            tips.append(span)
+                        # Outdated
+                        elif href == "/wiki/Image:50px-Ambox_outdated_serious.png":
+                            outdated.append(span)
+                        # Lowercase 
+                        elif href == "/wiki/Image:Farm-Fresh_text_lowercase.png":
+                            lowercase.append(span)
     result["notes"] = notes
     result["warnings"] = warnings
     result["versions"] = versions
@@ -159,11 +161,8 @@ def main():
 
     print("Pages to scrape:", len(pages))
 
-    # for page in pages:
-    #     print(page)
-    #     scrape_page(page)
-
-    scrape_page("https://wiki.sa-mp.com/wiki/DisablePlayerCheckpoint")
-
+    for page in pages:
+        print(page)
+        scrape_page(page)
 
 main()
