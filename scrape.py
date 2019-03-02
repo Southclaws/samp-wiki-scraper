@@ -81,7 +81,7 @@ def scrape_page(address: str):
                 ul = div.select("ul")
                 if ul:
                     for li in ul[0].select("li"):
-                        return_values.append(li.get_text())
+                        return_values.append(li)
                 else:
                     return_values.append(div)
     result["return_values"] = return_values
