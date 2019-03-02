@@ -10,16 +10,121 @@ def scrape_page(address: str):
     html = requests.get(address)
     root = BeautifulSoup(html.text, 'html.parser')
 
-    result["description"] = root.select(".description")[0].get_text()
-    result["feature"] = root.select("#bodyContent > div > table")[0].get_text()
-    params = []
+    ## Notes/Warnings/Versions/Tips
+    # All the messages displayed about usage
+    # errors, information, deprecation and versioning
+    notes = []
+    warnings = []
+    versions = []
+    tips = []
+    outdated = []
+    lowercase = []
+    table = root.select("table a.image")
+    if table:        
+        for element in table:
+            parent = element.find_parent("td")
+            td = parent.find_next_sibling("td")
+            span = td.select("span")            
+            if element.has_attr("href"):
+                href = element["href"]
+                # Version
+                if href == "/wiki/Image:Add.png":                                      
+                    versions.append(span)
+                # Warnings
+                elif href == "/wiki/Image:32px-Circle-style-warning.png":
+                    warnings.append(span)                 
+                # Notes
+                elif href == "/wiki/Image:32px-Ambox_warning_orange.png":
+                    notes.append(span)
+                # Tips
+                elif href == "/wiki/Image:Light_bulb_icon.png":                   
+                    tips.append(span)
+                # Outdated
+                elif href == "/wiki/Image:50px-Ambox_outdated_serious.png":
+                    outdated.append(span)
+                # Lowercase 
+                elif href == "/wiki/Image:Farm-Fresh_text_lowercase.png":
+                    lowercase.append(span)
+    result["notes"] = notes
+    result["warnings"] = warnings
+    result["versions"] = versions
+    result["tips"] = tips  
+    result["outdated"] = outdated                 
+    result["lowercase"] = lowercase                 
+
+    ## Description
+    # The pages descripton
+    description = root.select(".description")
+    if description:
+        result["description"] = description[0].get_text()
+
+    ## Params
+    # The parameters a callback / native accepts
+    params_title = root.select(".parameters")
+    if params_title:
+        result["params_title"] = params_title[0].get_text()
+    params_body = []
     for param in root.select(".param"):
         columns = param.select("td")
-        params.append({
-            "name": columns[0].get_text(),
-            "description": columns[1].get_text()
-        })
-    result["params"] = params
+        params_body.append({"name": columns[0].get_text(), "description": columns[1].get_text()})
+    result["params_body"] = params_body
+
+    ## Return Values
+    # The value returned from a native or callback
+    return_values = []
+    params_len = len(params_body)
+    b = root.select("#bodyContent > b")
+    if b:
+        siblings = b[0].find_next_siblings()
+        if siblings:
+            element = siblings[2 + params_len]
+            ul = element.select("ul")
+            if ul:
+                for li in ul[0].select("li"):
+                    return_values.append(li.get_text())
+            else:
+                return_values.append(element)
+    result["return_values"] = return_values
+
+    ## Code Blocks
+    # Contains code or config variables for code blocks
+    pawn = []
+    code = []
+    pre = root.select("pre")
+    if pre:
+        for element in pre:
+            if element.has_attr("class") and element["class"][0] == "pawn":
+                #print(element)
+                pawn.append(element)
+            else:
+                print(element)
+                code.append(element)
+    result["pawn_code"] = pawn
+    result["code"] = code
+
+    ## Related Functions
+    # Links to related natives
+    related_funcs = []
+    element = root.select("a[name=\"Related_Functions\"]")
+    if element:
+        next_element = element[0].find_next_siblings("ul")
+        if next_element:
+            for ul in next_element:
+                for li in ul.select("li"):
+                    related_funcs.append(related_funcs)
+    result["related_funcs"] = related_funcs
+
+    ## Related Callbacks
+    # Links to related callbacks
+    related_cb = []
+    element = root.select("a[name=\"Related_Callbacks\"]")
+    if element:
+        next_element = element[0].find_next_siblings("ul")
+        if next_element:
+            for ul in next_element:
+                for li in ul.select("li"):
+                    related_cb.append(related_cb)
+    result["related_cb"] = related_cb    
 
     return result
 
@@ -56,9 +161,11 @@ def main():
 
     print("Pages to scrape:", len(pages))
 
-    for page in pages:
-        scrape_page(page)
+    # for page in pages:
+    #     print(page)
+    #     scrape_page(page)
+
+    scrape_page("https://wiki.sa-mp.com/wiki/AddMenuItem")
 
 
-# main()
-print(dumps(scrape_page("https://wiki.sa-mp.com/wiki/CreatePlayerTextDraw")))
+main()
