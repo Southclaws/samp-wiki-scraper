@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from json import dumps
+from json import dump
+from pprint import pprint
 from bs4 import BeautifulSoup
 import requests
 
@@ -10,49 +11,52 @@ def scrape_page(address: str):
     html = requests.get(address)
     root = BeautifulSoup(html.text, 'html.parser')
 
+    result["name"] = root.select(".firstHeading")[0].get_text()
+
     ## Notes/Warnings/Versions/Tips
     # All the messages displayed about usage
     # errors, information, deprecation and versioning
-    notes = []
-    warnings = []
-    versions = []
-    tips = []
-    outdated = []
-    lowercase = []
+    notes = None
+    warnings = None
+    versions = None
+    tips = None
+    outdated = None
+    lowercase = None
     table = root.select("table a.image")
-    if table:        
+    if table:
         for element in table:
             parent = element.find_parent("td")
             if parent:
                 td = parent.find_next_sibling("td")
                 if td is not None:
-                    span = td.select("span")         
+                    span = td.select("span")[0]
                     if element.has_attr("href"):
                         href = element["href"]
                         # Version
-                        if href == "/wiki/Image:Add.png":                                      
-                            versions.append(span)
+                        if href == "/wiki/Image:Add.png":
+                            versions = span.get_text()
                         # Warnings
                         elif href == "/wiki/Image:32px-Circle-style-warning.png":
-                            warnings.append(span)                 
+                            warnings = span.get_text()
                         # Notes
                         elif href == "/wiki/Image:32px-Ambox_warning_orange.png":
-                            notes.append(span)
+                            notes = span.get_text()
                         # Tips
-                        elif href == "/wiki/Image:Light_bulb_icon.png":                   
-                            tips.append(span)
+                        elif href == "/wiki/Image:Light_bulb_icon.png":
+                            tips = span.get_text()
                         # Outdated
                         elif href == "/wiki/Image:50px-Ambox_outdated_serious.png":
-                            outdated.append(span)
-                        # Lowercase 
+                            outdated = span.get_text()
+                        # Lowercase
                         elif href == "/wiki/Image:Farm-Fresh_text_lowercase.png":
-                            lowercase.append(span)
+                            result["name"] = result["name"].lower()
+
     result["notes"] = notes
     result["warnings"] = warnings
     result["versions"] = versions
-    result["tips"] = tips  
-    result["outdated"] = outdated                 
-    result["lowercase"] = lowercase                 
+    result["tips"] = tips
+    result["outdated"] = outdated
+    result["lowercase"] = lowercase
 
     ## Description
     # The pages descripton
@@ -68,7 +72,10 @@ def scrape_page(address: str):
     params_body = []
     for param in root.select(".param"):
         columns = param.select("td")
-        params_body.append({"name": columns[0].get_text(), "description": columns[1].get_text()})
+        params_body.append({
+            "name": columns[0].get_text(),
+            "description": columns[1].get_text()
+        })
     result["params_body"] = params_body
 
     ## Return Values
@@ -83,9 +90,9 @@ def scrape_page(address: str):
                 ul = div.select("ul")
                 if ul:
                     for li in ul[0].select("li"):
-                        return_values.append(li)
+                        return_values.append(li.get_text())
                 else:
-                    return_values.append(div)
+                    return_values.append(div.get_text())
     result["return_values"] = return_values
 
     ## Code Blocks
@@ -96,9 +103,9 @@ def scrape_page(address: str):
     if pre:
         for element in pre:
             if element.has_attr("class") and element["class"][0] == "pawn":
-                pawn.append(element)
+                pawn.append(element.get_text())
             else:
-                code.append(element)
+                code.append(element.get_text())
     result["pawn_code"] = pawn
     result["code"] = code
 
@@ -111,7 +118,7 @@ def scrape_page(address: str):
         if next_element:
             for ul in next_element:
                 for li in ul.select("li"):
-                    related_fn.append(li)
+                    related_fn.append(li.get_text())
     result["related_fn"] = related_fn
 
     ## Related Callbacks
@@ -123,8 +130,8 @@ def scrape_page(address: str):
         if next_element:
             for ul in next_element:
                 for li in ul.select("li"):
-                    related_cb.append(related_cb)
-    result["related_cb"] = related_cb    
+                    related_cb.append(li.get_text())
+    result["related_cb"] = related_cb
 
     return result
 
@@ -162,7 +169,12 @@ def main():
     print("Pages to scrape:", len(pages))
 
     for page in pages:
-        print(page)
-        scrape_page(page)
+        function = scrape_page(page)
+        name = function["name"]
+        path = f"functions/{name}.json"
+
+        print(f"Writing {name} to {path}...")
+        with open(path, 'w') as fp:
+            dump(function, fp)
 
 main()
