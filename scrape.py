@@ -4,6 +4,9 @@ from json import dump
 from pprint import pprint
 from bs4 import BeautifulSoup
 import requests
+import subprocess
+
+from write import to_markdown
 
 
 def scrape_page(address: str):
@@ -80,7 +83,7 @@ def scrape_page(address: str):
 
     ## Return Values
     # The value returned from a native or callback
-    return_values = []
+    return_values = None
     b = root.select(".param")
     if b:
         p = b[0].find_next_sibling("p")
@@ -89,10 +92,12 @@ def scrape_page(address: str):
             if div:
                 ul = div.select("ul")
                 if ul:
+                    lines = []
                     for li in ul[0].select("li"):
-                        return_values.append(li.get_text())
+                        lines.append(li.get_text())
+                    return_values = '\n'.join(lines)
                 else:
-                    return_values.append(div.get_text())
+                    return_values = div.get_text()
     result["return_values"] = return_values
 
     ## Code Blocks
@@ -169,12 +174,25 @@ def main():
     print("Pages to scrape:", len(pages))
 
     for page in pages:
-        function = scrape_page(page)
-        name = function["name"]
-        path = f"functions/{name}.json"
+        page_data = scrape_page(page)
+        page_markdown = to_markdown(page_data)
+        name = page_data["name"]
+        path_json = f"functions/{name}.json"
+        path_markdown = f"markdown/{name}.md"
 
-        print(f"Writing {name} to {path}...")
-        with open(path, 'w') as fp:
-            dump(function, fp)
+        page_markdown_formatted = subprocess.run(
+            ["prettier", "--parser=markdown"],
+            encoding='utf8',
+            input=page_markdown,
+            stdout=subprocess.PIPE,
+        ).stdout
+
+        print(f"Writing {name} to {path_json} and {path_markdown}...")
+
+        with open(path_json, 'w') as fp:
+            dump(page_data, fp)
+
+        with open(path_markdown, 'w') as fp:
+            fp.write(page_markdown_formatted)
 
 main()

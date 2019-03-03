@@ -41,25 +41,60 @@ def to_markdown(obj):
         blocks.append(''.join(params_block))
 
     if obj["return_values"] is not None:
-        pass
+        blocks.append(f'''## Returns
 
-    if obj["pawn_code"] is not None:
-        pass
+{obj["return_values"]}
+''')
 
-    if obj["code"] is not None:
-        pass
+    if len(obj["pawn_code"]) > 0 or len(obj["code"]) > 0:
+        newline = "\n"
+        blocks.append("## Examples\n")
+        if len(obj["pawn_code"]) > 0:
+            blocks.append(f'''```c
+{newline.join(obj["pawn_code"])}
+```
+''')
 
-    if obj["tips"] is not None:
-        pass
+        if len(obj["code"]) > 0:
+            blocks.append(f'''```
+{newline.join(obj["code"])}
+```
+''')
 
-    if obj["notes"] is not None:
-        pass
+    if obj["tips"] is not None or obj["notes"] is not None or obj["warnings"] is not None:
+        blocks.append("## Notes")
 
-    if obj["warnings"] is not None:
-        pass
+        if obj["notes"] is not None:
+            blocks.append(f'''::: tip
+
+{obj["notes"]}
+
+:::
+''')
+
+        if obj["tips"] is not None:
+            blocks.append(f'''::: tip
+
+{obj["tips"]}
+
+:::
+''')
+
+        if obj["warnings"] is not None:
+            blocks.append(f'''::: warning
+
+{obj["warnings"]}
+
+:::
+''')
 
     if obj["related_fn"] is not None:
-        pass
+        blocks.append("## Related Functions\n")
+        newline = "\n"
+        related = []
+        for fn in obj["related_fn"]:
+            related.append(f"- {fn.strip(newline)}")
+        blocks.append('\n'.join(related))
 
     if obj["related_cb"] is not None:
         pass
