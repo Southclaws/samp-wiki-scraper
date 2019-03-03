@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from sys import argv
 from json import dump
 from pprint import pprint
 from bs4 import BeautifulSoup
@@ -14,7 +15,7 @@ def scrape_page(address: str):
     html = requests.get(address)
     root = BeautifulSoup(html.text, 'html.parser')
 
-    result["name"] = root.select(".firstHeading")[0].get_text()
+    result["name"] = root.select(".firstHeading")[0].get_text().replace(" ", "_")
 
     ## Notes/Warnings/Versions/Tips
     # All the messages displayed about usage
@@ -162,20 +163,43 @@ def get_functions_from(address: str):
 
 
 def main():
+    start_from = None
+    if len(argv) > 1:
+        start_from = argv[1]
+
+    all_pages = []
     pages = []
 
-    pages += get_functions_from(
+    all_pages += get_functions_from(
         "https://wiki.sa-mp.com/wiki/Category:Scripting_Functions")
-    pages += get_functions_from(
+    all_pages += get_functions_from(
         "https://wiki.sa-mp.com/wroot/index.php?title=Category:Scripting_Functions&from=GetPlayerPing")
-    pages += get_functions_from(
+    all_pages += get_functions_from(
         "https://wiki.sa-mp.com/wroot/index.php?title=Category:Scripting_Functions&from=SetPlayerCameraPos")
+
+    if start_from is not None:
+        get = False
+        for p in all_pages:
+            if get:
+                pages.append(p)
+            else:
+                if p.rsplit("/", 1)[1] == start_from:
+                    get = True
+    else:
+        pages = all_pages
 
     print("Pages to scrape:", len(pages))
 
     for page in pages:
-        page_data = scrape_page(page)
-        page_markdown = to_markdown(page_data)
+        print(f"Pricessing {page}")
+
+        try:
+            page_data = scrape_page(page)
+            page_markdown = to_markdown(page_data)
+        except Exception as e:
+            print(e)
+            continue
+
         name = page_data["name"]
         path_json = f"functions/{name}.json"
         path_markdown = f"markdown/{name}.md"
@@ -186,8 +210,6 @@ def main():
             input=page_markdown,
             stdout=subprocess.PIPE,
         ).stdout
-
-        print(f"Writing {name} to {path_json} and {path_markdown}...")
 
         with open(path_json, 'w') as fp:
             dump(page_data, fp)
