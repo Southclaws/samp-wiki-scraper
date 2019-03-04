@@ -1,3 +1,9 @@
+---
+title: AddCharModel
+description: Adds a new custom character model for download.
+tags: []
+---
+
 # AddCharModel
 
 ::: warning
@@ -35,8 +41,10 @@ public OnGameModeInit()
 ```
 
 ```
+
 AddCharModel(305, 20001, "lvpdpc2.dff", "lvpdpc2.txd");
 AddCharModel(305, 20002, "lapdpd2.dff", "lapdpd2.txd");
+
 ```
 
 ## Notes

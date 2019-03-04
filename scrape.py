@@ -10,12 +10,30 @@ import subprocess
 from write import to_markdown
 
 
+TAGS = [
+    "player",
+    "vehicle",
+    "textdraw",
+    "playertextdraw",
+    "gangzone",
+    "3dtextlabel",
+    "checkpoint",
+    "racecheckpoint",
+    "pvar",
+    "npc",
+    "menu",
+]
+
+
 def scrape_page(address: str):
     result = {}
     html = requests.get(address)
     root = BeautifulSoup(html.text, 'html.parser')
 
-    result["name"] = root.select(".firstHeading")[0].get_text().replace(" ", "_")
+    name = root.select(".firstHeading")[0].get_text().replace(" ", "_")
+    result["name"] = name
+    result["tags"] = [tag for tag in TAGS if tag in name.lower()]
+
 
     ## Notes/Warnings/Versions/Tips
     # All the messages displayed about usage

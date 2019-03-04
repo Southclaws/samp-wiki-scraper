@@ -4,11 +4,23 @@ from sys import argv
 from json import load
 
 
+def clean_description(s):
+    return s.split(".", 1)[0].replace(":", "") + "."
+
+
 def to_markdown(obj):
     blocks = []
 
     if "name" not in obj:
         raise "missing 'name'"
+    if "description" not in obj:
+        raise "missing 'description'"
+
+    blocks.append(f'''---
+title: {obj["name"]}
+description: {clean_description(obj["description"])}
+tags: {obj["tags"]}
+---''')
 
     blocks.append(f'# {obj["name"]}')
 
@@ -26,8 +38,7 @@ def to_markdown(obj):
 
 :::''')
 
-    if obj["description"] is not None:
-        blocks.append(f'''## Description
+    blocks.append(f'''## Description
 
 {obj["description"]}
 ''')
