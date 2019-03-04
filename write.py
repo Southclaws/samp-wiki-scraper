@@ -24,6 +24,8 @@ tags: {obj["tags"]}
 
     blocks.append(f'# {obj["name"]}')
 
+    blocks.append(f'<TagLinks />')
+
     if obj["versions"] is not None:
         blocks.append(f'''::: warning
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from sys import argv
+from os import makedirs
 from json import dump
 from pprint import pprint
 from bs4 import BeautifulSoup
@@ -25,15 +26,20 @@ TAGS = [
 ]
 
 
-def scrape_page(address: str):
+def scrape_page(page: str):
+    kind = page[0]
+    address = page[1]
+
     result = {}
     html = requests.get(address)
     root = BeautifulSoup(html.text, 'html.parser')
 
     name = root.select(".firstHeading")[0].get_text().replace(" ", "_")
+    if ':' in name:
+        name = name.split(":", 1)[1]
     result["name"] = name
     result["tags"] = [tag for tag in TAGS if tag in name.lower()]
-
+    result["kind"] = kind
 
     ## Notes/Warnings/Versions/Tips
     # All the messages displayed about usage
@@ -160,22 +166,15 @@ def scrape_page(address: str):
     return result
 
 
-def get_functions_from(address: str):
-    # perform a HTTP GET request on the scripting functions page
-    # `functions` now contains a response object
+def get_functions_from(kind: str, selector: str, address: str):
     functions = requests.get(address)
-    # get the text out of the response body (the raw HTML code) and parse it using
-    # beautifulsoup, this gives us a root node
     root = BeautifulSoup(functions.text, 'html.parser')
+    content = root.select(selector)
 
-    # do a CSS select to get all the elements we want
-    content = root.select("#bodyContent > table:nth-child(101) a")
-
-    # iterate through the results and print the href attribute
     pages = []
     for node in content:
         address = "https://wiki.sa-mp.com" + node['href']
-        pages.append(address)
+        pages.append((kind, address))
 
     return pages
 
@@ -188,20 +187,23 @@ def main():
     all_pages = []
     pages = []
 
-    all_pages += get_functions_from(
+    all_pages += get_functions_from("functions", "#bodyContent > table:nth-child(101) a",
         "https://wiki.sa-mp.com/wiki/Category:Scripting_Functions")
-    all_pages += get_functions_from(
+    all_pages += get_functions_from("functions", "#bodyContent > table:nth-child(101) a",
         "https://wiki.sa-mp.com/wroot/index.php?title=Category:Scripting_Functions&from=GetPlayerPing")
-    all_pages += get_functions_from(
+    all_pages += get_functions_from("functions", "#bodyContent > table:nth-child(101) a",
         "https://wiki.sa-mp.com/wroot/index.php?title=Category:Scripting_Functions&from=SetPlayerCameraPos")
+    all_pages += get_functions_from("callbacks", "#bodyContent > table a",
+        "https://wiki.sa-mp.com/wiki/Category:Scripting_Callbacks")
 
     if start_from is not None:
         get = False
-        for p in all_pages:
+        for page in all_pages:
+            kind, address = page
             if get:
-                pages.append(p)
+                pages.append(page)
             else:
-                if p.rsplit("/", 1)[1] == start_from:
+                if address.rsplit("/", 1)[1] == start_from:
                     get = True
     else:
         pages = all_pages
@@ -209,18 +211,23 @@ def main():
     print("Pages to scrape:", len(pages))
 
     for page in pages:
-        print(f"Pricessing {page}")
+        kind, address = page
+        print(f"Pricessing {address}")
 
         try:
-            page_data = scrape_page(page)
+            page_data = scrape_page((kind, address))
             page_markdown = to_markdown(page_data)
         except Exception as e:
             print(e)
             continue
 
         name = page_data["name"]
-        path_json = f"functions/{name}.json"
-        path_markdown = f"markdown/{name}.md"
+        dir_json = f"json/{page_data['kind']}"
+        dir_markdown = f"markdown/{page_data['kind']}"
+        makedirs(dir_json, exist_ok=True)
+        makedirs(dir_markdown, exist_ok=True)
+        path_json = f"{dir_json}/{name}.json"
+        path_markdown = f"{dir_markdown}/{name}.md"
 
         page_markdown_formatted = subprocess.run(
             ["prettier", "--parser=markdown"],
